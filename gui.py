@@ -48,10 +48,9 @@ def get_input_file():
     file_name = QFileDialog.getOpenFileName(None, 'Open file', './', '(*.*)')
     
     #Grab the relevant part of the tuple and pass it to ffmpeg in a way it understands
-    #input_file = ffmpeg.input(file_name[0])
     input_file = file_name[0]
 
-    #flatten the list into a string (if the filename has full stops in it then input_file_name[0] won't work)
+    #flatten the list into a string (if the filename has full stops in it then input_file_name[0] alone won't work)
     output_file_name = tcw_tools.output_filename_sanitiser(file_name[0])
 
     #Tell the user that we've got their file as well as hiding the old button
@@ -86,8 +85,13 @@ def transcode_all():
     # ffmpeg -i [input] -c:a libmp3lame -q 5.5 -compression_level 0 [output.mp3]
     # ffmpeg -i [input] -c:a libvorbis -q -0.1 -ac 1 [output.ogg]
     # ffmpeg -i [input] -c:a libfdk_aac -vbr 3 [output.m4a]
-
-    #The numbers should still be strings
+    #
+    # If you'd like to add more variants they can go in here.
+    # If you're adding a new file extension then you'll need to tinker with the tcw_transcode_tools module
+    # Mainly because I've not looked up the specific eccentricities of every conceivable audio codec!
+    
+    # The last number is the channel count (1 for mono, 2 for stereo)
+    # Also the numbers should be strings
     tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "opus", "24000", "1")
     tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "mp3", "5.5", "2")
     tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "m4a", "3", "2")
@@ -108,13 +112,11 @@ output_button = QPushButton('Select the output folder')
 transcode_all_button = QPushButton('Transcode to all formats')
 transcode_mp3_button = QPushButton('Transcode to MP3 only')
 transcoding_complete_label = QLabel('Done!')
-    
 
 output_button.hide()
 transcode_all_button.hide()
 transcode_mp3_button.hide()
 transcoding_complete_label.hide()
-
 
 #When a button is clicked run the code
 input_file_button.clicked.connect(get_input_file)
