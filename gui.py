@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-import ffmpeg
+import tcw_transcode_tools as tcw_tools
 
 #Every time Jenny finishes editing an episode she needs to create multiple versions of the podcast's audio files
 #Each serves a different purpose - mostly to allow people who need different formats and filesizes to get them
@@ -35,60 +35,46 @@ window.move(260, 215)
 #Let's lay things out vertically
 layout = QVBoxLayout()
 
-#Then we create the widgets that make up the GUI. For example the QLabel object type:
 
-inputFileButton = QPushButton('Input file')
-
-
-
-
-def getInputFile():
-    #First we want to get the input file - the '(*.*)' thing is where we could specify a file extension e.g. (*.flac)
-    fname = QFileDialog.getOpenFileName(None, 'Open file', './', '(*.*)')
+def get_input_file():
     
     #input and output files need to be globally scoped
-    global inputFile
-    global outputFileName
-    global inputFileLabel
+    global input_file
+    global output_file_name
+    global input_file_label
+    global file_name
+
+    #First we want to get the input file - the '(*.*)' thing is where we could specify a file extension e.g. (*.flac)
+    file_name = QFileDialog.getOpenFileName(None, 'Open file', './', '(*.*)')
     
-    #Grab the relevant part of the tuple
-    inputFile = ffmpeg.input(fname[0])
+    #Grab the relevant part of the tuple and pass it to ffmpeg in a way it understands
+    #input_file = ffmpeg.input(file_name[0])
+    input_file = file_name[0]
+
+    #flatten the list into a string (if the filename has full stops in it then input_file_name[0] won't work)
+    output_file_name = tcw_tools.output_filename_sanitiser(file_name[0])
 
     #Tell the user that we've got their file as well as hiding the old button
-    inputFileButton.hide()
-    inputFileLabel = QLabel("Selected input file: " + fname[0])
-    inputFileLabel.show()
-    layout.addWidget(inputFileLabel)
-
-    #Grab the name of the file for the outputs, split it into a list, keep only the last entry - the file
-    inputFileName = fname[0].split("/")
-    inputFileName = inputFileName[-1]
-    #The bin the file extension as we only need the name itself
-    inputFileName = inputFileName.split(".")
-    outputFileName = inputFileName[0]
-
-
+    input_file_button.hide()
+    input_file_label = QLabel(f"Selected input file: {file_name[0]}")
+    input_file_label.show()
+    layout.addWidget(input_file_label)
 
     #Now show the output button:
-    doStuffButton.show()
-    doStuffLabel.show()
+    output_button.show()
 
-
-
-doStuffButton = QPushButton('Select the output folder')
-doStuffLabel = QLabel('Click the button to output all four formats')
-
-def doStuff():
-    doStuffButton.hide()
-    doStuffLabel.hide()
-        
-    #Now we prompt the user for where to save the output
-    outputPath = QFileDialog.getExistingDirectory(None,'Select output folder')
-    #The output path is a string rather than the tuples we get from getSaveFileName
+def output_directory_selection():
+    output_button.hide()
     
+    global output_path
+    #Now we prompt the user for where to save the output
+    output_path = QFileDialog.getExistingDirectory(None,'Select output folder')
+    #The output path is a string rather than the tuples we get from getSaveFileName
+    input_file_label.hide()
+    transcode_all_button.show()
+    transcode_mp3_button.show()
 
-    inputFileLabel.hide()
-
+def transcode_all():
     # The parameters for the various The C Word release formats are as follows:
     # Opus, 24kbps VBR mono
     # MP3 V5.5 ~125kbps
@@ -101,42 +87,52 @@ def doStuff():
     # ffmpeg -i [input] -c:a libvorbis -q -0.1 -ac 1 [output.ogg]
     # ffmpeg -i [input] -c:a libfdk_aac -vbr 3 [output.m4a]
 
-    #Opus first
-    stream = ffmpeg.output(inputFile, outputPath + "/" + outputFileName + '.opus', ac=1, audio_bitrate=24000)
-    ffmpeg.run(stream)
-    #Then MP3
-    stream = ffmpeg.output(inputFile, outputPath + "/" + outputFileName + '.mp3', q=5.5)
-    ffmpeg.run(stream)
-    #Now AAC - we don't actually have libfdk_aac so instead we're using the native implementation which isn't quite as good
-    #We'll make do though!
-    stream = ffmpeg.output(inputFile, outputPath + "/" + outputFileName + '.m4a', q=0.55)
-    ffmpeg.run(stream)
-    #Then Vorbis
-    stream = ffmpeg.output(inputFile, outputPath + "/" + outputFileName + '.ogg', q=-0.1, ac=1)
-    ffmpeg.run(stream)
+    #The numbers should still be strings
+    tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "opus", "24000", "1")
+    tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "mp3", "5.5", "2")
+    tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "m4a", "3", "2")
+    tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "ogg", "-0.1", "1")
+    transcode_all_button.hide()
+    transcode_mp3_button.hide()
+    transcoding_complete_label.show()
 
-    stuffDoneLabel = QLabel('Done!')
-    layout.addWidget(stuffDoneLabel)
+def transcode_mp3():
+    tcw_tools.ffmpeg_audio_transcode(input_file, output_path, output_file_name, "mp3", "5.5", "2")
+    transcode_all_button.hide()
+    transcode_mp3_button.hide()
+    transcoding_complete_label.show()
+
+#Add the buttons and labels but hide them initially
+input_file_button = QPushButton('Select input file')
+output_button = QPushButton('Select the output folder')
+transcode_all_button = QPushButton('Transcode to all formats')
+transcode_mp3_button = QPushButton('Transcode to MP3 only')
+transcoding_complete_label = QLabel('Done!')
+    
+
+output_button.hide()
+transcode_all_button.hide()
+transcode_mp3_button.hide()
+transcoding_complete_label.hide()
 
 
-
-#When the button is clicked run the code
-inputFileButton.clicked.connect(getInputFile)
-doStuffButton.clicked.connect(doStuff)
-
+#When a button is clicked run the code
+input_file_button.clicked.connect(get_input_file)
+output_button.clicked.connect(output_directory_selection)
+transcode_all_button.clicked.connect(transcode_all)
+transcode_mp3_button.clicked.connect(transcode_mp3)
 
 #Now we add those widgets to the layout. At present we're using a vertical layout so these are from top to bottom.
-layout.addWidget(inputFileButton)
-layout.addWidget(doStuffLabel)
-layout.addWidget(doStuffButton)
+layout.addWidget(input_file_button)
+layout.addWidget(output_button)
+layout.addWidget(transcode_all_button)
+layout.addWidget(transcode_mp3_button)
+layout.addWidget(transcoding_complete_label)
 
 #Add a button that kills the program:
 closeButton = QPushButton('Close program')
 closeButton.clicked.connect(lambda _: sys.exit())
 layout.addWidget(closeButton)
-
-doStuffButton.hide()
-doStuffLabel.hide()
 
 #Then we need to actually display it:
 window.setLayout(layout)
