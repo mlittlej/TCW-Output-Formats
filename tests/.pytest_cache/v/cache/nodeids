@@ -1,0 +1,5 @@
+[
+  "test_maths.py::test_divide_by_zero",
+  "test_maths.py::test_one_plus_one",
+  "test_maths.py::test_one_plus_two"
+]
