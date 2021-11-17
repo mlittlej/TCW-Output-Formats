@@ -1,6 +1,7 @@
-import tcw_transcode_tools
 import os.path
 import pytest
+
+import tcw_output_formats.tcw_transcode_tools as tcw_transcode_tools
 
 
 def test_output_filename_sanitiser():
