@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 import sys
 import tcw_transcode_tools as tcw_tools
+# Every time Jenny finishes editing an episode she needs to create multiple versions of the podcast's audio files
+# Each serves a different purpose - mostly to allow people who need different formats and filesizes to get them
+# Admittedly I doubt anyone actually uses these but I know I've been stuck in a situation with barely any bandwidth
+# and nothing to listen to!
 
+# I've used my previous GUI code as a starting point so some of the comments may look familiar!
 
-def main():
-    # Every time Jenny finishes editing an episode she needs to create multiple versions of the podcast's audio files
-    # Each serves a different purpose - mostly to allow people who need different formats and filesizes to get them
-    # Admittedly I doubt anyone actually uses these but I know I've been stuck in a situation with barely any bandwidth
-    # and nothing to listen to!
-
-    # I've used my previous GUI code as a starting point so some of the comments may look familiar!
-
+def main(): 
     # 1. Import `QApplication` and all the required widgets
     from PyQt5 import QtWidgets
     from PyQt5.QtWidgets import (
